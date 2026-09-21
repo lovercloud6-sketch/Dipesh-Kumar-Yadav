@@ -1,0 +1,6 @@
+{
+  "name": "STEPORA – Ergonomic Foot Comfort & Recovery Footwear",
+  "description": "Premium everyday foot comfort, ergonomic recovery slippers, and targeted arch support designed to make walking feel effortless.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
