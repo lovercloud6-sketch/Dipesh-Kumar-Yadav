@@ -17,9 +17,11 @@ import {
   Users, 
   ArrowUpRight,
   Sparkles,
-  AlertCircle
+  AlertCircle,
+  ExternalLink
 } from 'lucide-react';
 import { Product, Order, Review } from '../types';
+import { AddProductModal } from '../components/AddProductModal';
 
 export const AdminDashboard: React.FC = () => {
   const { 
@@ -29,12 +31,15 @@ export const AdminDashboard: React.FC = () => {
     settings, 
     saveSettings, 
     updateProduct, 
+    deleteProduct,
     updateOrderStatus, 
     moderateReview,
-    fetchInitialData
+    fetchInitialData,
+    setCurrentPage
   } = useStore();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'reviews' | 'settings'>('overview');
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   // Settings form state
   const [announcementText, setAnnouncementText] = useState(settings.announcementBarText);
@@ -356,10 +361,23 @@ export const AdminDashboard: React.FC = () => {
         {/* Tab 3: Products Management */}
         {activeTab === 'products' && (
           <div className="bg-white rounded-3xl border border-stone-200 p-6 shadow-2xs space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-stone-100">
-              <h3 className="text-base font-bold text-stone-900">
-                Products Catalog ({products.length} active SKUs)
-              </h3>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-stone-100 gap-3">
+              <div>
+                <h3 className="text-base font-bold text-stone-900">
+                  Products Catalog ({products.length} active SKUs)
+                </h3>
+                <p className="text-xs text-stone-500">
+                  Manage prices, inventory stock, launch new items, or delete outdated SKUs
+                </p>
+              </div>
+
+              <button
+                onClick={() => setIsAddModalOpen(true)}
+                className="inline-flex items-center justify-center gap-2 bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xs transition shrink-0"
+              >
+                <Plus size={15} />
+                <span>+ Add New Product</span>
+              </button>
             </div>
 
             <div className="divide-y divide-stone-100">
@@ -368,7 +386,14 @@ export const AdminDashboard: React.FC = () => {
                   <div className="flex items-center gap-3 min-w-0">
                     <img src={p.images[0]} alt="" className="w-14 h-14 rounded-xl object-cover border border-stone-200 shrink-0" />
                     <div>
-                      <h4 className="font-bold text-stone-900 text-sm truncate">{p.name}</h4>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-stone-900 text-sm truncate">{p.name}</h4>
+                        {p.badge && (
+                          <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-sm bg-amber-100 text-amber-900 tracking-wider">
+                            {p.badge}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-stone-500 text-xs">{p.category} • {p.colors.length} colors • {p.sizes.length} sizes</p>
                       <span className="text-[11px] text-emerald-700 font-semibold">{p.inStock ? 'In Stock' : 'Out of Stock'}</span>
                     </div>
@@ -408,11 +433,20 @@ export const AdminDashboard: React.FC = () => {
                       </button>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
+                    <div className="flex items-center gap-3">
+                      <div className="text-right mr-2">
                         <span className="font-extrabold text-stone-900 text-sm block">${p.salePrice.toFixed(2)}</span>
                         <span className="text-xs text-stone-400 line-through">${p.price.toFixed(2)}</span>
                       </div>
+
+                      <button
+                        onClick={() => setCurrentPage('product', p.slug)}
+                        title="View in store"
+                        className="p-2 text-stone-500 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition"
+                      >
+                        <ExternalLink size={15} />
+                      </button>
+
                       <button
                         onClick={() => {
                           setEditingProductId(p.id);
@@ -420,9 +454,21 @@ export const AdminDashboard: React.FC = () => {
                           setEditSalePrice(p.salePrice);
                           setEditInStock(p.inStock);
                         }}
-                        className="bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold px-3 py-2 rounded-xl"
+                        className="bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold px-3 py-2 rounded-xl transition"
                       >
                         Edit Price
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          if (confirm(`Are you sure you want to delete "${p.name}"?`)) {
+                            deleteProduct(p.id);
+                          }
+                        }}
+                        title="Delete product"
+                        className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition"
+                      >
+                        <Trash2 size={15} />
                       </button>
                     </div>
                   )}
@@ -610,6 +656,13 @@ export const AdminDashboard: React.FC = () => {
         )}
 
       </div>
+
+      {/* Modal for adding a new product */}
+      <AddProductModal 
+        isOpen={isAddModalOpen} 
+        onClose={() => setIsAddModalOpen(false)} 
+        onSuccess={() => setActiveTab('products')}
+      />
     </div>
   );
 };

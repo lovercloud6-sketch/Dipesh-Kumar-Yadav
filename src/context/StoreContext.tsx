@@ -85,7 +85,9 @@ export interface StoreContextType {
   updateOrderStatus: (orderId: string, status: OrderStatus, trackingNumber?: string) => Promise<void>;
 
   // Products Management
+  addProduct: (product: Omit<Product, 'id' | 'createdAt'>) => Promise<Product>;
   updateProduct: (product: Product) => Promise<void>;
+  deleteProduct: (id: string) => Promise<void>;
 
   // Reviews
   reviews: ProductReview[];
@@ -530,6 +532,31 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     );
   };
 
+  // Add product (Admin)
+  const addProduct = async (productData: Omit<Product, 'id' | 'createdAt'>): Promise<Product> => {
+    try {
+      const res = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(productData),
+      });
+      if (res.ok) {
+        const created: Product = await res.json();
+        setProducts(prev => [created, ...prev]);
+        return created;
+      }
+      throw new Error('Failed to create product');
+    } catch {
+      const fallback: Product = {
+        ...productData,
+        id: 'prod-' + Date.now().toString(36),
+        createdAt: new Date().toISOString(),
+      };
+      setProducts(prev => [fallback, ...prev]);
+      return fallback;
+    }
+  };
+
   // Update product (Admin)
   const updateProduct = async (prod: Product) => {
     try {
@@ -542,6 +569,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       console.error(e);
     }
     setProducts(prev => prev.map(p => (p.id === prod.id ? prod : p)));
+  };
+
+  // Delete product (Admin)
+  const deleteProduct = async (id: string) => {
+    try {
+      await fetch(`/api/products/${id}`, { method: 'DELETE' });
+    } catch (e) {
+      console.error(e);
+    }
+    setProducts(prev => prev.filter(p => p.id !== id));
   };
 
   // Reviews
@@ -644,7 +681,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         createOrder,
         trackOrder,
         updateOrderStatus,
+        addProduct,
         updateProduct,
+        deleteProduct,
         reviews,
         submitReview,
         moderateReview,
